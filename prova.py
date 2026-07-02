@@ -46,11 +46,12 @@ for driver in drivers:
 
         if start is None or end is None or label is None: #controllo per saltare i periodi mancanti e quello di return che è escluso
             continue  
-
-        for j in range(start, end - window_size, step):  #suddivisione del periodo del segnale lo faccio secondo finestre di 60 secondi.
+        offset = int(fs * 120)  # offset di 2 minuti come descritto da paper
+        start_offset = start + offset   
+        for j in range(start_offset, end - window_size, step):  #suddivisione del periodo del segnale lo faccio secondo finestre di 60 secondi.
             window = segnale[j:j + window_size, :] #estraggo la finestra del segnale
-            ALL_X.append(window) #salvo
-            ALL_Y.append(label) #salvo
+            ALL_X.append(window) 
+            ALL_Y.append(label) 
 
 print(f"Totale finestre: {len(ALL_X)}")
 print(f"Distribuzione: no_stress={ALL_Y.count(0)}, stress={ALL_Y.count(1)}")
