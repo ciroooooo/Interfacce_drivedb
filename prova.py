@@ -1,7 +1,6 @@
 import wfdb
 import numpy as np
 
-
 #dizionario con i periodi di inizio e fine di ogni periodo dell'esperimento (presi dal paper)
 period_bounds = {
     "05": [515, 14586, 29468, 36666, 42306, 49337, 63246, 77922],
@@ -72,9 +71,13 @@ def filter_gsr(signal):
     X[0] = 0 #X[0] è la frequenza 0 ovvero la componente costante del segnale, dunque la elimino
     return np.real(np.fft.ifft(X)) 
 
-ECG_COL = 0
-FGSR_COL = 2
-HGSR_COL = 3
+ECG_COL = 0 #############
+EMG_COL = 1 #############
+FGSR_COL = 2  ############# modifica: aggiunta dei parametri mancanti perché necessari nell'estrazione delle feature
+HGSR_COL = 3 #############
+RESP_COL = 6 #############
+
+
 #escludo HR (non previsto nel paper)
 #escludo anche EMG 
 
@@ -82,9 +85,55 @@ ALL_X_filtered = []
 #filtro vero e proprio.
 for window in ALL_X: 
     w = window.copy()
-    w[:, ECG_COL] = filter_ecg(w[:, ECG_COL], fs_ref)
+    w[:, ECG_COL] = filter_ecg(w[:, ECG_COL], fs) ################################## modifica: cambiato "fs_ref" con "fs"
     w[:, FGSR_COL] = filter_gsr(w[:, FGSR_COL])
     w[:, HGSR_COL] = filter_gsr(w[:, HGSR_COL])
     ALL_X_filtered.append(w)
 
 print(f"Finestre filtrate: {len(ALL_X_filtered)}")
+
+#######################ESTRAZIONE FEATURE################
+
+from scipy.signal import find_peaks
+
+def extract_peak_features(signal, fs, width=5, prominence=0.1):
+    peaks, _ = find_peaks(signal, width=width, prominence=prominence)
+    n_peaks = len(peaks)
+    if n_peaks > 1:
+        intervals = np.diff(peaks) / fs
+        mean_interval = np.mean(intervals)
+        amp_diffs = np.diff(signal[peaks])
+        mean_diff = np.mean(np.abs(amp_diffs))
+    else:
+        mean_interval = 0
+        mean_diff = 0
+    return n_peaks, mean_interval, mean_diff
+
+def extract_rms(signal):
+    return np.sqrt(np.mean(signal**2))
+
+FEATURES = []
+for window in ALL_X_filtered:
+    ecg = window[:, ECG_COL]
+    fgsr = window[:, FGSR_COL]
+    hgsr = window[:, HGSR_COL]
+    emg = window[:, EMG_COL]
+    resp = window[:, RESP_COL]
+
+    peaks_ecg, mean_rr, _ = extract_peak_features(ecg, fs)
+    peaks_fgsr, mean_int_f, mean_diff_f = extract_peak_features(fgsr, fs)
+    peaks_hgsr, mean_int_h, mean_diff_h = extract_peak_features(hgsr, fs)
+    rms_emg = extract_rms(emg)
+    mean_resp = np.mean(resp)
+
+    FEATURES.append([
+        peaks_ecg, mean_rr,
+        peaks_fgsr, mean_int_f, mean_diff_f,
+        peaks_hgsr, mean_int_h, mean_diff_h,
+        rms_emg, mean_resp
+    ])
+
+FEATURES = np.array(FEATURES)
+Y = np.array(ALL_Y)
+
+print(f"Shape delle feature: {FEATURES.shape}")  # dovrebbe essere (555, 10) circa
