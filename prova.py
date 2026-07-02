@@ -16,7 +16,6 @@ period_bounds = {
     "16": [792, 14750, 29739, 36380, 41145, 47476, 60418, None],
 }
 
-
 # nomi e label (0 = no stress, 1 = stress) — "return" viene escluso
 period_names = ["rest1", "city1", "hwy1", "return", "hwy2", "city2", "rest2"]
 period_labels = [0, 1, 1, None, 1, 1, 0]  # None = periodo da scartare
@@ -55,3 +54,37 @@ for driver in drivers:
 
 print(f"Totale finestre: {len(ALL_X)}")
 print(f"Distribuzione: no_stress={ALL_Y.count(0)}, stress={ALL_Y.count(1)}")
+
+#######################INIZIO FILTRAGGIO################
+
+#def filtraggio segnale ecg, tramite giustamente il segnale, la freq di campionamento e frequenza di taglio (0.5 per eliminare la componente lenta)
+def filter_ecg(signal, fs, cutoff=0.5): 
+    N = len(signal) #lunghezza del segnale
+
+    X = np.fft.fft(signal) #passo dal dominio del tempo a quello delle frequenze.
+    freqs = np.fft.fftfreq(N, d=1/fs) #creo array per indicare a quale frequenza corrisponde ogni punto di fft.
+    X[np.abs(freqs) < cutoff] = 0 #se la frequenza è al di sotto della frequenza di taglio, la azzero.
+    return np.real(np.fft.ifft(X)) #restituisco il segnale, riportato però nel periodo del tempo.
+
+def filter_gsr(signal): 
+    N = len(signal) #numero campioni del segnale.
+    X = np.fft.fft(signal) #porto il segnale nel dominio delle frequenze.
+    X[0] = 0 #X[0] è la frequenza 0 ovvero la componente costante del segnale, dunque la elimino
+    return np.real(np.fft.ifft(X)) 
+
+ECG_COL = 0
+FGSR_COL = 2
+HGSR_COL = 3
+#escludo HR (non previsto nel paper)
+#escludo anche EMG 
+
+ALL_X_filtered = []
+#filtro vero e proprio.
+for window in ALL_X: 
+    w = window.copy()
+    w[:, ECG_COL] = filter_ecg(w[:, ECG_COL], fs_ref)
+    w[:, FGSR_COL] = filter_gsr(w[:, FGSR_COL])
+    w[:, HGSR_COL] = filter_gsr(w[:, HGSR_COL])
+    ALL_X_filtered.append(w)
+
+print(f"Finestre filtrate: {len(ALL_X_filtered)}")
