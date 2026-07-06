@@ -147,7 +147,8 @@ for window in ALL_X_filtered:
         peaks_ecg, mean_rr,
         peaks_fgsr, mean_int_f, mean_diff_f,
         peaks_hgsr, mean_int_h, mean_diff_h,
-        rms_emg, mean_resp
+        rms_emg, mean_resp,
+        std_ecg, std_fgsr, std_hgsr, std_emg, std_resp
     ])
 #le trasformo in un array numpy per poterle salvare dopo più facilmente.
 FEATURES = np.array(FEATURES)
