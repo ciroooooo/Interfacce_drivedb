@@ -1,6 +1,12 @@
 import wfdb
 import numpy as np
 from scipy.signal import find_peaks
+import os
+
+curdir = os.getcwd()
+dir = curdir.replace(r"\variazione_esperimento","")
+
+
 #dizionario con i periodi di inizio e fine di ogni periodo dell'esperimento (presi dal paper)
 period_bounds = {
     "05": [515, 14586, 29468, 36666, 42306, 49337, 63246, 77922],
@@ -29,7 +35,7 @@ window_size_sec = 60  #uso finestre da 60 secondi (per replicare il paper)
 step_sec = window_size_sec
 
 for driver in drivers: 
-    record = wfdb.rdrecord(f"drivedb/drive{driver}") #prelevo il record
+    record = wfdb.rdrecord(f"{dir}/drivedb/drive{driver}") #prelevo il record
     segnale = record.p_signal #estraggo i dati fisiologi del guidatore
     fs = record.fs #frequenza di campionamento.
 
@@ -121,12 +127,21 @@ for window in ALL_X_filtered:
     hgsr = window[:, HGSR_COL]
     emg = window[:, EMG_COL]
     resp = window[:, RESP_COL]
+    
     #estraggo le features di ogni segnale
     peaks_ecg, mean_rr, _ = extract_peak_features(ecg, fs)
     peaks_fgsr, mean_int_f, mean_diff_f = extract_peak_features(fgsr, fs)
     peaks_hgsr, mean_int_h, mean_diff_h = extract_peak_features(hgsr, fs)
     rms_emg = extract_rms(emg)
     mean_resp = np.mean(resp)
+
+    #nuove features (std)
+    std_ecg = np.std(ecg)
+    std_fgsr = np.std(fgsr)
+    std_hgsr = np.std(hgsr)
+    std_emg = np.std(emg)
+    std_resp = np.std(resp)
+
     #le salvo
     FEATURES.append([
         peaks_ecg, mean_rr,
