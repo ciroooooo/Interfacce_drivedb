@@ -4,22 +4,29 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 import joblib
+
+# Caricamento dati
 FEATURES = np.load("FEATURES.npy")
 Y = np.load("Y.npy")
 
+# Split train/test
 X_train, X_test, y_train, y_test = train_test_split(FEATURES, Y, test_size=0.3, random_state=42)
 
+# Normalizzazione delle feature
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
+# Ricerca iperparametri: per ogni combinazione esegue una cross-validation (fold=5)
+# Sceglie la combinazione con l'accuracy media piu alta
 param_grid = {"n_neighbors": [3, 5, 7], "leaf_size": [20, 30, 40], "weights": ["uniform", "distance"]}
 grid = GridSearchCV(KNeighborsClassifier(), param_grid, cv=5)
 grid.fit(X_train, y_train)
 
+# Test
 print(grid.best_params_, grid.score(X_test, y_test))
 y_pred = grid.predict(X_test)
 
-
+# Salvataggio del modello
 joblib.dump(grid.best_estimator_, "knn_model.joblib")
 joblib.dump(scaler, "scaler.joblib")

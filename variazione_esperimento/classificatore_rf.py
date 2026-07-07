@@ -25,6 +25,8 @@ param_grid = {
     "min_samples_leaf": [1, 2]
 }
 
+# prova tutte le combinazioni possibili con cross-validation a 5 fold: divido in 5 parti, 4 allenamento 1 test.
+# sceglie la combinazione con l'accuracy media piu alta
 grid = GridSearchCV(
     estimator=rf,
     param_grid=param_grid,
@@ -32,12 +34,13 @@ grid = GridSearchCV(
     scoring="accuracy",
     n_jobs=-1
 )
-
 grid.fit(X_train, y_train)
 
+# test
 best_model = grid.best_estimator_
 y_pred = best_model.predict(X_test)
 
+# Stampa dei risultati
 print("Best params:")
 print(grid.best_params_)
 print("\nTest accuracy:")
@@ -48,5 +51,5 @@ print("\nClassification report:")
 print(classification_report(y_test, y_pred, zero_division=0))
 
 
-
+# salvataggio
 joblib.dump(best_model, "rf_model.joblib")
